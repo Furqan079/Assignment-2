@@ -1,0 +1,113 @@
+﻿@page "/product-review"
+@using System.ComponentModel.DataAnnotations
+
+<h3>Product Review Form</h3>
+
+<EditForm Model="@review" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="productName">Product Name:</label>
+        <InputText id="productName" class="form-control" @bind-Value="review.ProductName" />
+        <ValidationMessage For="@(() => review.ProductName)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="rating">Rating:</label>
+        <InputSelect id="rating" class="form-control" @bind-Value="review.Rating">
+            <option value="">-- Select Rating --</option>
+            @for (int i = 1; i <= 5; i++)
+            {
+                <option value="@i">@i</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => review.Rating)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="reviewDescription">Review Description:</label>
+        <InputTextArea id="reviewDescription" class="form-control" @bind-Value="review.ReviewDescription" />
+        <ValidationMessage For="@(() => review.ReviewDescription)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="purchaseDate">Purchase Date:</label>
+        <InputDate id="purchaseDate" class="form-control" @bind-Value="review.PurchaseDate" />
+        <ValidationMessage For="@(() => review.PurchaseDate)" />
+    </div>
+
+    <div class="mb-3">
+        <label>Would You Recommend?</label>
+        <InputRadioGroup @bind-Value="review.WouldRecommend">
+            <InputRadio id="recommendYes" Value="Yes" /> Yes
+            <InputRadio id="recommendNo" Value="No" /> No
+        </InputRadioGroup>
+        <ValidationMessage For="@(() => review.WouldRecommend)" />
+    </div>
+
+    <div class="mb-3">
+        <InputCheckbox id="agreeTerms" @bind-Value="review.AgreeToTerms" />
+        <label for="agreeTerms">I agree to the terms</label>
+        <ValidationMessage For="@(() => review.AgreeToTerms)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@if (isSubmitted)
+{
+    <h4>Thank You!</h4>
+    <p><strong>Product Name:</strong> @review.ProductName</p>
+    <p><strong>Rating:</strong> @review.Rating</p>
+    <p><strong>Review Description:</strong> @review.ReviewDescription</p>
+    <p><strong>Purchase Date:</strong> @(review.PurchaseDate.HasValue ? review.PurchaseDate.Value.ToShortDateString() : "N/A")</p>
+    <p><strong>Would Recommend:</strong> @review.WouldRecommend</p>
+    <p><strong>Agree to Terms:</strong> @(review.AgreeToTerms ? "Yes" : "No")</p>
+}
+
+@code {
+    private ProductReview review = new ProductReview();
+    private bool isSubmitted = false;
+
+    private void HandleValidSubmit()
+    {
+        isSubmitted = true;
+    }
+
+    public class ProductReview
+    {
+        [Required(ErrorMessage = "Product Name is required.")]
+        public string ProductName { get; set; }
+
+        [Required(ErrorMessage = "Rating is required.")]
+        [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5.")]
+        public int? Rating { get; set; }
+
+        [MinLength(20, ErrorMessage = "Review Description must be at least 20 characters.")]
+        public string ReviewDescription { get; set; }
+
+        [Required(ErrorMessage = "Purchase Date is required.")]
+        [DataType(DataType.Date)]
+        [CustomValidation(typeof(ProductReview), "ValidatePastDate")]
+        public DateTime? PurchaseDate { get; set; }
+
+        [Required(ErrorMessage = "Please select if you would recommend this product.")]
+        public string WouldRecommend { get; set; }
+
+        [Required(ErrorMessage = "You must agree to the terms.")]
+        public bool AgreeToTerms { get; set; }
+
+        public static ValidationResult ValidatePastDate(DateTime? date, ValidationContext context)
+        {
+            if (!date.HasValue)
+            {
+                return ValidationResult.Success;
+            }
+
+            return date.Value.Date > DateTime.Now.Date
+                ? new ValidationResult("Purchase Date cannot be in the future.")
+                : ValidationResult.Success;
+        }
+    }
+}
